@@ -6,7 +6,7 @@ import {
   useQuery,
 } from "convex/react";
 import { Button } from "./ui/button";
-import { GoogleLogo } from "./google";
+import { GoogleLogo, GitHubLogo } from "./logos";
 import { api } from "@/../convex/_generated/api";
 
 export default function AuthWrapper(props: { Content: React.ComponentType }) {
@@ -17,7 +17,8 @@ export default function AuthWrapper(props: { Content: React.ComponentType }) {
     <>
       <main>
         <Authenticated>
-          <div className="top-0 right-0 fixed mr-2 mt-2 flex gap-5">
+          <div className="top-0 right-0 w-full fixed mx-2 mt-2 flex gap-5">
+            <span className="font-serif my-auto mx-5 text-2xl mr-auto">Lyrix</span>
             <div className="flex">
               <img
                 src={image ?? undefined}
@@ -34,14 +35,22 @@ export default function AuthWrapper(props: { Content: React.ComponentType }) {
           <props.Content />
         </Authenticated>
         <Unauthenticated>
-          <div className="w-[100vw] h-[100vh]">
+          <div className="w-screen h-screen flex flex-col items-center justify-center gap-2">
           <Button
-            className="w-[14vw] h-[4vh] mx-[43vw] my-[48vh]"
+            // className="h-[4vh] mt-[46vh] mb-[1vh]"
             variant="default"
             type="button"
             onClick={() => void signIn("google")}
           >
             <GoogleLogo className="mr-2 h-4 w-4" /> Sign in with Google
+          </Button>
+          <Button
+            // className="h-[4vh] mb-[45vh] mt-[1vh]"
+            variant="default"
+            type="button"
+            onClick={() => void signIn("github")}
+          >
+            <GitHubLogo className="mr-2 h-4 w-4" /> Sign in with Github
           </Button>
           </div>
         </Unauthenticated>

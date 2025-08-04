@@ -1,45 +1,51 @@
-# Welcome to your Convex + React (Vite) + Convex Auth app
+# Lyrix 🎵
 
-This is a [Convex](https://convex.dev/) project created with [`npm create convex`](https://www.npmjs.com/package/create-convex).
+Lyrix is a powerful song organizer and lyrics analysis tool designed for music lovers and researchers. It allows you to build your personal music library, analyze lyrical content, and uncover deeper insights with AI-powered data analysis.
 
-After the initial setup (<2 minutes) you'll have a working full-stack app using:
+## ✨ features
 
-- Convex as your backend (database, server logic)
-- [React](https://react.dev/) as your frontend (web page interactivity)
-- [Vite](https://vitest.dev/) for optimized web hosting
-- [Tailwind](https://tailwindcss.com/) for building great looking UI
-- [Convex Auth](https://labs.convex.dev/auth) for authentication
+* **song organization**: build and manage your personal music library.
+* **lyrics integration**: fetch and display song lyrics using the LRCLIB API.
+* **youtube integration**: link music videos from YouTube directly to songs in your library.
+* **in-depth analysis**: add comments and annotations to specific lyric selections.
+* **ai-powered insights**: leverage artificial intelligence for complex data analysis of lyrical themes, patterns, and sentiment.
+* **collaboration**: generate shareable links to your libraries, allowing others to view or clone them.
 
-## Get started
+## 🛠️ tech stack
 
-If you just cloned this codebase and didn't use `npm create convex`, run:
+* **frontend**: React, Vite, Wouter, nuqs, Tailwind CSS, shadcn/ui
+* **backend**: Convex
+* **apis**:
+    * [LRCLIB API](https://lrclib.net/api-docs) for fetching song lyrics.
+    * [YouTube API](https://developers.google.com/youtube/v3) for video integration and search.
 
-```
-npm install
-npm run dev
-```
+## 🚀 roadmap
 
-If you're reading this README on GitHub and want to use this template, run:
+our project is under active development. here is our current progress:
 
-```
-npm create convex@latest -- -t react-vite-convexauth
-```
+* ✅ **core functionality**
+    * [x] personal song library (`My Library`)
+    * [x] song database (`Songs`)
+    * [x] lyrics fetching via LRCLIB API
+* 📝 **upcoming features**
+    * [ ] youtube api integration (search and link mvs)
+    * [ ] advanced commenting (link comments to lyric selections)
+    * [ ] shareable library links
+    * [ ] library cloning
+    * [ ] ai-powered complex data analysis
+    * [ ] cvx file uploading
+    * [ ] attach and edit mv screenshots with timestamps in comments
 
-For more information on how to configure Convex Auth, check out the [Convex Auth docs](https://labs.convex.dev/auth/).
+## 🤝 contributing
 
-For more examples of different Convex Auth flows, check out this [example repo](https://www.convex.dev/templates/convex-auth).
+contributions are welcome! if you'd like to contribute, please fork the repository and create a pull request. you can also open an issue with the "enhancement" tag.
 
-## Learn more
+1.  fork the project
+2.  create your feature branch (`git checkout -b feature/AmazingFeature`)
+3.  commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4.  push to the branch (`git push origin feature/AmazingFeature`)
+5.  open a pull request
 
-To learn more about developing your project with Convex, check out:
+## 📄 license
 
-- The [Tour of Convex](https://docs.convex.dev/get-started) for a thorough introduction to Convex principles.
-- The rest of [Convex docs](https://docs.convex.dev/) to learn about all Convex features.
-- [Stack](https://stack.convex.dev/) for in-depth articles on advanced topics.
-
-## Join the community
-
-Join thousands of developers building full-stack apps with Convex:
-
-- Join the [Convex Discord community](https://convex.dev/community) to get help in real-time.
-- Follow [Convex on GitHub](https://github.com/get-convex/), star and contribute to the open-source implementation of Convex.
+this project is licensed under the MIT License. see the `LICENSE` file for more information.

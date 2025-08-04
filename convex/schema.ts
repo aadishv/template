@@ -7,7 +7,8 @@ import { authTables } from "@convex-dev/auth/server";
 // The schema provides more precise TypeScript types.
 export default defineSchema({
   ...authTables,
-  numbers: defineTable({
-    value: v.number(),
-  }),
+  saved: defineTable({
+    user: v.id("users"),
+    song: v.number(),
+  }).index("user", ['user']),
 });

@@ -107,7 +107,6 @@ export const useLibrary = (): {
 
 export const useSong = (id: number): { isLoading: boolean, data?: Song } => {
   const library = useQuery(api.library.getLibrary, {});
-
   const { isLoading, data } = useTSQuery({
     queryKey: ["song", id],
     queryFn: async () => {
@@ -118,14 +117,15 @@ export const useSong = (id: number): { isLoading: boolean, data?: Song } => {
       const song = await response.json();
       return {
         ...song,
-        isSaved: library ? library.includes(song.id) : false
       } as Song;
     },
     enabled: id != null && library !== undefined,
   });
-
   return {
     isLoading: isLoading || library === undefined,
-    data
+    data: data && {
+      ...data,
+      isSaved: library?.includes(id) || false,
+    },
   };
 };

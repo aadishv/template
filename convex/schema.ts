@@ -10,5 +10,14 @@ export default defineSchema({
   saved: defineTable({
     user: v.id("users"),
     song: v.number(),
-  }).index("user", ['user']),
+  }).index("user", ["user"]),
+  comments: defineTable({
+    user: v.id("users"),
+    song: v.number(),
+    start: v.number(),
+    end: v.number(),
+    color: v.string(),
+    title: v.string(),
+    content: v.string(),
+  }).index("song_and_user", ["song", "user"]),
 });

@@ -1,6 +1,8 @@
 import { useQuery as useTSQuery } from "@tanstack/react-query";
 import api from "@/cvx";
 import { useQuery } from "convex/react";
+import { useEffect, useState } from "react";
+import { Id } from "convex/_generated/dataModel";
 
 export type Song = {
   id: number;
@@ -16,12 +18,22 @@ export type Song = {
   isSaved?: boolean;
 };
 
+export type Comment = {
+  user: string;
+  content: string;
+  start: number;
+  end: number;
+  color: string;
+  title: string;
+  _id: Id<"comments">;
+};
+
 export const useTrackSearch = (query: {
-  q: string,
-  scope: "all" | "song" | "artist" | "album"
+  q: string;
+  scope: "all" | "song" | "artist" | "album";
 }): {
-  isLoading: boolean,
-  data: Song[]
+  isLoading: boolean;
+  data: Song[];
 } => {
   const { q, scope } = query;
 
@@ -47,8 +59,8 @@ export const useTrackSearch = (query: {
   if (!q) {
     return {
       isLoading: false,
-      data: []
-    }
+      data: [],
+    };
   }
   if (isLoading || data == undefined || library == undefined) {
     return {
@@ -58,34 +70,33 @@ export const useTrackSearch = (query: {
   }
   return {
     isLoading,
-    data: data.map(song => ({
+    data: data.map((song) => ({
       ...song,
-      isSaved: library.includes(song.id)
-    }))
-  }
+      isSaved: library.includes(song.id),
+    })),
+  };
 };
 
 export const useLibrary = (): {
-  isLoading: boolean,
-  data: Song[]
+  isLoading: boolean;
+  data: Song[];
 } => {
   console.log("called");
 
   const library = useQuery(api.library.getLibrary, {});
 
-  const getPromiseForId = (id: number) => {
-    return fetch(`https://lrclib.net/api/get/${id}`).then(
-      res => res.json()
-    ).then(
-      j => ({
-        ...j,
-        isSaved: true
-      } as Song)
-    );
-  }
+  const getPromiseForId = async (id: number) => await fetch(`https://lrclib.net/api/get/${id}`)
+      .then((res) => res.json())
+      .then(
+        (j) =>
+          ({
+            ...j,
+            isSaved: true,
+          }) as Song,
+      );
 
   const { isLoading, data } = useTSQuery({
-    queryKey: ["userLibrary"],
+    queryKey: ["userLibrary", library],
     queryFn: async () => {
       const data = await Promise.all(library!.map(getPromiseForId));
       return data as Song[];
@@ -96,16 +107,16 @@ export const useLibrary = (): {
   if (data == undefined || library == undefined) {
     return {
       isLoading: true,
-      data: []
+      data: [],
     };
   }
   return {
     isLoading,
-    data
-  }
+    data,
+  };
 };
 
-export const useSong = (id: number): { isLoading: boolean, data?: Song } => {
+export const useSong = (id: number): { isLoading: boolean; data?: Song } => {
   const library = useQuery(api.library.getLibrary, {});
   const { isLoading, data } = useTSQuery({
     queryKey: ["song", id],
@@ -128,4 +139,53 @@ export const useSong = (id: number): { isLoading: boolean, data?: Song } => {
       isSaved: library?.includes(id) || false,
     },
   };
+};
+
+export const useCommentsForSong = (
+  songId: number,
+): {
+  isLoading: boolean;
+  data: Comment[];
+} => {
+  const comments = useQuery(api.comments.getUserCommentsForSong, { songId });
+  return {
+    isLoading: comments === undefined,
+    data: comments || [],
+  };
+};
+
+export const useElementSelection = ({ id }: { id: string }) => {
+  const [selection, setSelection] = useState<Range | null>(null);
+  useEffect(() => {
+    const abortController = new AbortController();
+    const handler = () => {
+      const docSelection = document.getSelection();
+      if (docSelection?.rangeCount == 0 || !docSelection) {
+        setSelection(null);
+        return;
+      }
+      const range = docSelection.getRangeAt(0);
+      const start = range.startContainer.parentElement;
+      const end = range.endContainer.parentElement;
+      if (
+        start == end &&
+        start?.id == id &&
+        range.startOffset < range.endOffset &&
+        range != selection
+      ) {
+        setSelection(range ?? null);
+      } else {
+        setSelection(null);
+      }
+    };
+
+    document.addEventListener("selectionchange", handler, {
+      signal: abortController.signal,
+    });
+
+    return () => {
+      abortController.abort();
+    };
+  }, [selection, id]);
+  return selection;
 };

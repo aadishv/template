@@ -1,9 +1,9 @@
-import { Trash, X, Pencil } from "lucide-react";
+import { Trash, X, Pencil, Link } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import AutoResizingTextarea from "../AutoResizingTextarea";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { type Comment } from "@/hooks";
+import { useSong, type Comment } from "@/hooks";
 import { commentsFocus } from "@/pages/SongPage";
 import { useAtom } from "@xstate/store/react";
 
@@ -11,11 +11,16 @@ export default function CommentView({
   comment,
   setComment,
   deleteComment,
+  songId,
 }: {
   comment: Comment;
   setComment: ({ title, content }: { title: string; content: string }) => void;
   deleteComment: () => void;
+    songId: number;
 }) {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const songLinked = comment.linked ? useSong(comment.linked) : null;
+
   const beginFocus = useCallback(() => commentsFocus.set(c => ({
     ...c,
     focusedElement: comment._id
@@ -61,6 +66,7 @@ export default function CommentView({
       document.getElementById(`title-${comment._id}`)?.focus();
     }
   }, [queuedEdit, comment, editMode, startEdit])
+  // console.log(song?.data.id, songId);
   return (
     <div
       className="bg-white rounded-xl border-2 p-3"
@@ -68,6 +74,11 @@ export default function CommentView({
       onMouseEnter={beginFocus}
       onMouseLeave={endFocus}
     >
+      {
+        songLinked && songLinked.data && <span className="flex text-sm">
+          <Link className="h-3.5 my-auto" /><span className="my-auto">Linked to a comment in song <a className="underline" href={`/song?id=${songLinked.data.id}`}>{songLinked.data.name}</a></span>
+        </span>
+      }
       <div className="w-full flex">
           {editMode ? (
             <Input
@@ -87,7 +98,7 @@ export default function CommentView({
           <Button
             variant="destructive"
             className="ml-auto"
-            title="Delete comment"
+          title={comment.linked ? "Unlink comment" : "Delete comment"}
             onClick={deleteComment}
           >
             <Trash />

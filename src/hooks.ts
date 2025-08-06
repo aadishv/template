@@ -26,6 +26,7 @@ export type Comment = {
   color: string;
   title: string;
   _id: Id<"comments">;
+  linked: number | null;
 };
 
 export const useTrackSearch = (query: {
@@ -81,7 +82,6 @@ export const useLibrary = (): {
   isLoading: boolean;
   data: Song[];
 } => {
-  console.log("called");
 
   const library = useQuery(api.library.getLibrary, {});
 
@@ -103,7 +103,6 @@ export const useLibrary = (): {
     },
     enabled: library != undefined,
   });
-  console.log(isLoading, data);
   if (data == undefined || library == undefined) {
     return {
       isLoading: true,

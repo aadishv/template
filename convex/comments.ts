@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { Id } from "./_generated/dataModel";
 
 const colors: string[] = [
   "rgba(255, 154, 162, 0.7)", // Red (Watermelon)
@@ -17,14 +18,33 @@ export const getUserCommentsForSong = query({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Unauthenticated");
-    const comments = await ctx.db
+    // ACTUAL comments
+    const comments = (await ctx.db
       .query("comments")
       .withIndex("song_and_user", (q) =>
         q.eq("song", args.songId).eq("user", userId),
       )
+      .collect()).map(obj => ({ ...obj, linked: null as number | null }));
+    // linked comments
+    const linkedCommentsRaw = await ctx.db
+      .query("linkedComments")
+      .withIndex("song_and_user", (q) =>
+        q.eq("song", args.songId).eq("user", userId),
+      )
       .collect();
+    const linkedComments = await Promise.all(
+      linkedCommentsRaw.map(async (comment) => {
+        const com = (await ctx.db.get(comment.comment))!;
+        return {
+          ...com,
+          start: comment.start,
+          end: comment.end,
+          linked: com.song,
+        };
+      }),
+    );
     // sort by 1) .start, 2) .end
-    return comments.sort((a, b) => {
+    return comments.concat(linkedComments).sort((a, b) => {
       if (a.start !== b.start) return a.start - b.start;
       return a.end - b.end;
     });
@@ -50,7 +70,6 @@ export const updateComment = mutation({
       title: args.title,
       content: args.content,
     });
-    return null;
   },
 });
 
@@ -67,6 +86,19 @@ export const deleteComment = mutation({
     const comment = await ctx.db.get(args.commentId);
     if (!comment) throw new Error("Comment not found");
     if (comment.user !== userId) throw new Error("Permission denied");
+    // Delete any linkedComments referencing this comment
+    const links = await ctx.db
+      .query("linkedComments")
+      .withIndex(
+        "song_and_user",
+        (q) => q, // index is ["song", "user"], so we need to filter manually
+      )
+      .collect();
+    for (const link of links) {
+      if (link.comment === args.commentId) {
+        await ctx.db.delete(link._id);
+      }
+    }
     await ctx.db.delete(args.commentId);
     return null;
   },
@@ -88,6 +120,58 @@ export const newComment = mutation({
       title: "",
       content: "",
     });
+  },
+});
+
+/**
+ * Unlink a comment from a song for the current user.
+ */
+export const unlinkCommentFromSong = mutation({
+  args: {
+    commentId: v.id("comments"),
+    songId: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthenticated");
+    // Find the linkedComment entry for this comment and song for this user
+    const links = await ctx.db
+      .query("linkedComments")
+      .withIndex("song_and_user", q =>
+        q.eq("song", args.songId).eq("user", userId)
+      )
+      .collect();
+    for (const link of links) {
+      if (link.comment === args.commentId) {
+        await ctx.db.delete(link._id);
+      }
+    }
     return null;
+  },
+});
+
+/**
+ * Link an existing comment to a song for the current user.
+ */
+export const linkCommentToSong = mutation({
+  args: {
+    commentId: v.id("comments"),
+    songId: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthenticated");
+    const comment = await ctx.db.get(args.commentId);
+    if (!comment) throw new Error("Comment not found");
+    // Only allow linking if the comment belongs to the user
+    if (comment.user !== userId) throw new Error("Permission denied");
+    // Create a linkedComment entry
+    return await ctx.db.insert("linkedComments", {
+      comment: args.commentId,
+      start: comment.start,
+      end: comment.end,
+      song: args.songId,
+      user: userId,
+    });
   },
 });

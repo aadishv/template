@@ -1,7 +1,7 @@
 "use client";
 import "./index.css";
 import ProviderWrapper from "./components/ProviderWrapper";
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, Link } from "wouter";
 import {
   NavigationMenu,
   NavigationMenuLink,
@@ -43,9 +43,9 @@ function NotFound() {
       </p>
       <p className="font-sans text-sm text-gray-500">
         If you are not redirected,{" "}
-        <a href="/" className="underline">
+        <Link href="/" className="underline">
           click here
-        </a>
+        </Link>
         .
       </p>
     </div>
@@ -61,17 +61,23 @@ function App() {
         <span className="font-serif my-auto mx-5 text-2xl mr-auto">Lyrix</span>
         <NavigationMenu className="mx-auto my-auto">
           <NavigationMenuList>
-            <NavigationMenuLink className="flex !flex-row" href="/">
-              <Search className="my-auto h-4 w-4" />
-              <span className="my-auto">Search</span>
+            <NavigationMenuLink asChild>
+              <Link className="flex !flex-row" href="/">
+                <Search className="my-auto h-4 w-4" />
+                <span className="my-auto">Search</span>
+              </Link>
             </NavigationMenuLink>
-            <NavigationMenuLink href="/library" className="flex !flex-row">
-              <Library className="my-auto h-4 w-4" />
-              <span className="my-auto">Library</span>
+            <NavigationMenuLink asChild>
+              <Link href="/library" className="flex !flex-row">
+                <Library className="my-auto h-4 w-4" />
+                <span className="my-auto">Library</span>
+              </Link>
             </NavigationMenuLink>
-            <NavigationMenuLink href="/comments" className="flex !flex-row">
-              <MessageSquare className="my-auto h-4 w-4" />
-              <span className="my-auto">Comments</span>
+            <NavigationMenuLink asChild>
+              <Link href="/comments" className="flex !flex-row">
+                <MessageSquare className="my-auto h-4 w-4" />
+                <span className="my-auto">Comments</span>
+              </Link>
             </NavigationMenuLink>
           </NavigationMenuList>
         </NavigationMenu>

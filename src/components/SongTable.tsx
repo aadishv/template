@@ -11,7 +11,9 @@ import { Song } from "@/hooks";
 import { Bookmark, ListMusic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "convex/react";
+import { Link } from "wouter";
 import api from "../cvx";
+import Confirm from "./Confirm";
 type SongTable = {
   isLoading: boolean;
   data: (Song & { isSaved?: boolean })[] | undefined;
@@ -72,34 +74,43 @@ export default function SongTable({ isLoading, data }: SongTable) {
                     </TableCell>
                     {song.isSaved != undefined && (
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          className="-py-2 -my-2"
-                          onClick={() => void saveSong({ id: song.id })}
-                          aria-label={
-                            song.isSaved
-                              ? "Remove song from library"
-                              : "Save song to library"
-                          }
-                          title={
-                            song.isSaved
-                              ? "Remove song from library"
-                              : "Save song to library"
-                          }
+                        <Confirm
+                          onConfirm={() => void saveSong({ id: song.id })}
+                          action="Remove song from library"
+                          message="Removing this song from your library also permanently deletes all associated comments."
+                          disabled={!song.isSaved}
                         >
-                          <Bookmark
-                            className=""
-                            fill={song.isSaved ? "#000" : "none"}
-                            stroke="#000"
-                          />
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            className="-py-2 -my-2"
+                            aria-label={
+                              song.isSaved
+                                ? "Remove song from library"
+                                : "Save song to library"
+                            }
+                            title={
+                              song.isSaved
+                                ? "Remove song from library"
+                                : "Save song to library"
+                            }
+                          >
+                            <Bookmark
+                              className=""
+                              fill={song.isSaved ? "#000" : "none"}
+                              stroke="#000"
+                            />
+                          </Button>
+                        </Confirm>
                         <Button
                           variant="ghost"
                           className="-py-2 -my-2"
                           aria-label={"Open song lyrics"}
                           title={"Open song lyrics"}
+                          asChild
                         >
-                          <a href={`/song?id=${song.id}`}><ListMusic /></a>
+                          <Link href={`/song?id=${song.id}`}>
+                            <ListMusic />
+                          </Link>
                         </Button>
                       </TableCell>
                     )}

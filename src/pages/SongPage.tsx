@@ -6,16 +6,12 @@ import {
   Song,
   useCommentsForSong,
   useElementSelection,
-  useLibrary,
   useSong,
 } from "@/hooks";
 import { useMutation } from "convex/react";
-import { useQueryState } from "nuqs";
 import { Redirect } from "wouter";
-import { Id } from "convex/_generated/dataModel";
-import CommentView from "@/components/comment/Comment";
+import CommentView from "@/components/comment/CommentView";
 import CommentHighlight from "@/components/comment/CommentHighlight";
-import { createAtom } from "@xstate/store";
 import { useAtom } from "@xstate/store/react";
 import {
   DialogHeader,
@@ -26,18 +22,13 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import { CommentChooser } from "@/components/comment/CommentChooser";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-
-// eslint-disable-next-line react-refresh/only-export-components
-export const commentsFocus = createAtom({
-  focusedElement: null as Id<"comments"> | null,
-  queuedEdit: null as Id<"comments"> | null,
-});
+  commentsFocus,
+  selectionAtom,
+  useCurrentSong,
+} from "@/components/comment/state";
+import Confirm from "@/components/Confirm";
 
 function SongDetails({ song }: { song: Song }) {
   /* info card */
@@ -77,92 +68,6 @@ function SongDetails({ song }: { song: Song }) {
   );
 }
 
-function SongChooser({ realSong }: {realSong: Song}) {
-  const { isLoading, data: library } = useLibrary();
-  const link = useMutation(api.comments.linkCommentToSong);
-  const SongComments = ({ song }: { song: Song }) => {
-    const { isLoading: songIsLoading, data: comments } = useCommentsForSong(song.id);
-    return (
-      <>
-        <div className="flex flex-col">
-          {songIsLoading ? (
-            <Skeleton className="w-full h-10" />
-          ) : comments ? (
-            comments.map((comment) => {
-              return (
-                <div
-                  key={comment._id}
-                  className="text-sm p-3 w-full h-full border flex flex-col rounded-xl border-black/20"
-                >
-                  <blockquote
-                    style={{
-                      borderLeft: "4px solid #ccc",
-                      padding: "0.5em 1em",
-                      background: "#f9f9f9",
-                      fontStyle: "italic",
-                    }}
-                  >
-                    {song.plainLyrics.slice(comment.start, comment.end)}
-                  </blockquote>
-                  <span>
-                  <span className="font-semibold">
-                    {comment.title || "No title"}
-                  </span>
-                  <span className="text-muted-foreground">
-                    : {comment.content}
-                  </span>
-                  </span>
-                  <DialogClose asChild>
-                    <Button className="ml-auto" onClick={() =>
-                      void link({
-                        commentId: comment._id,
-                        songId: realSong.id
-                      })
-                    }>Link this comment</Button>
-                  </DialogClose>
-                </div>
-              );
-            })
-          ) : (
-            "No comments"
-          )}
-        </div>
-      </>
-    );
-  };
-  const songAccordion = (song: Song) => (
-    <AccordionItem value={`${song.id}`}>
-      <AccordionTrigger>
-        <span>
-          <b className="">{`${song.name}`}</b>
-          {` | ${song.albumName} | ${song.artistName}`}
-        </span>
-      </AccordionTrigger>
-      <AccordionContent className="flex flex-col gap-4 text-balance">
-        <SongComments song={song} />
-      </AccordionContent>
-    </AccordionItem>
-  );
-  return (
-    <div className="grid gap-4">
-      <Accordion
-        type="single"
-        collapsible
-        className="w-full"
-        defaultValue="item-1"
-      >
-        {isLoading ? (
-          <Skeleton className="h-10 w-full" />
-        ) : library ? (
-          library.map((song) => songAccordion(song))
-        ) : (
-          "No songs in your library."
-        )}
-      </Accordion>
-    </div>
-  );
-}
-
 function SongPageInternal({ id }: { id: number }) {
   const { isLoading, data } = useSong(id);
   const saveSong = useMutation(api.library.saveSong);
@@ -173,19 +78,45 @@ function SongPageInternal({ id }: { id: number }) {
   const unlink = useMutation(api.comments.unlinkCommentFromSong);
   const newComment = useMutation(api.comments.newComment);
 
-  const selection = useElementSelection({
+  useElementSelection({
     id: "song-lyrics",
+    setter: (v) => {
+      selectionAtom.set((old) => {
+        if (v == null) {
+          return { ...old, selection: v };
+        } else {
+          return { lastSelection: v, selection: v };
+        }
+      });
+    },
   });
 
   const focusedComment = useAtom(commentsFocus, (c) => c.focusedElement);
+  const selection = useAtom(selectionAtom, (c) => c.selection);
+
+  const handleNewComment = () => {
+    window.getSelection()?.removeAllRanges();
+    void (async () => {
+      const id = await newComment({
+        song: data!.id,
+        start: selection?.startOffset || 0,
+        end: selection?.endOffset || 0,
+      });
+      commentsFocus.set((c) => ({
+        ...c,
+        queuedEdit: id,
+      }));
+    })();
+  };
+
   return (
-    <div className="flex flex-col min-h-screen mx-auto w-full pb-8">
+    <div className="fixed inset-0 flex flex-col w-full overflow-hidden pt-16 px-16">
       {isLoading ? (
         <Skeleton className="h-40 w-full top-15" />
       ) : data ? (
         <div className="flex flex-col">
           {/* card */}
-          <div className="sticky top-15 h-32 z-10 flex flex-row rounded-lg border shadow bg-white">
+          <div className="flex-shrink-0 h-32 z-10 flex flex-row rounded-lg border shadow bg-white relative">
             <SongDetails song={data} />
             {/* button group */}
             <div className="ml-auto h-full my-1 mr-1">
@@ -194,20 +125,7 @@ function SongPageInternal({ id }: { id: number }) {
                   <div className="gap-1 mb-1 flex flex-col">
                     <Button
                       disabled={selection == null}
-                      onClick={() => {
-                        window.getSelection()?.removeAllRanges();
-                        void (async () => {
-                          const id = await newComment({
-                            song: data.id,
-                            start: selection?.startOffset || 0,
-                            end: selection?.endOffset || 0,
-                          });
-                          commentsFocus.set((c) => ({
-                            ...c,
-                            queuedEdit: id,
-                          }));
-                        })();
-                      }}
+                      onClick={handleNewComment}
                       title={
                         selection == null
                           ? "Select lyrics to begin commenting"
@@ -233,7 +151,7 @@ function SongPageInternal({ id }: { id: number }) {
                         <DialogHeader>
                           <DialogTitle>Choose comment to link</DialogTitle>
                         </DialogHeader>
-                        <SongChooser realSong={data} />
+                        <CommentChooser />
                         <DialogFooter>
                           <DialogClose asChild>
                             <Button variant="destructive">Cancel</Button>
@@ -242,17 +160,19 @@ function SongPageInternal({ id }: { id: number }) {
                       </DialogContent>
                     </Dialog>
                   </div>
-                  <Button
-                    variant="destructive"
-                    className="ml-auto"
-                    onClick={() => {
+                  <Confirm
+                    message="Removing this song from your library will permanently delete any comments on it."
+                    action="Unsave this song"
+                    onConfirm={() => {
                       if (data.id) {
                         void saveSong({ id: data.id });
                       }
                     }}
                   >
-                    Unsave
-                  </Button>
+                    <Button variant="destructive" className="ml-auto">
+                      Unsave
+                    </Button>
+                  </Confirm>
                 </div>
               ) : (
                 <Button
@@ -268,55 +188,62 @@ function SongPageInternal({ id }: { id: number }) {
               )}
             </div>
           </div>
-          <div className="flex">
-            <div className="flex w-[66%] flex-col flex-1 min-h-0 m-4">
-              <div className="text-sm whitespace-pre-wrap overflow-y-hidden font-mono min-h-0 grid grid-cols-1 grid-rows-1">
-                {comments && data?.isSaved && (
-                  <CommentHighlight
-                    comments={comments}
-                    song={data}
-                    focused={focusedComment}
-                  />
-                )}
-                <div
-                  id="song-lyrics"
-                  className="overflow-y-clip"
-                  style={{
-                    letterSpacing: 0,
-                    fontSize: "1em",
-                    gridArea: "1/1",
-                    zIndex: 1,
-                  }}
-                >
-                  {data.plainLyrics || "No lyrics found."}
+          <div
+            className="flex relative"
+            style={{ height: "calc(100vh - 192px)" }}
+          >
+            {/* lyrics */}
+            <div className="w-[66%] relative">
+              <div className="absolute inset-4 overflow-y-auto">
+                <div className="text-sm whitespace-pre-wrap font-mono grid grid-cols-1 grid-rows-1">
+                  {comments && data?.isSaved && (
+                    <CommentHighlight
+                      comments={comments}
+                      song={data}
+                      focused={focusedComment}
+                    />
+                  )}
+                  <div
+                    id="song-lyrics"
+                    style={{
+                      letterSpacing: 0,
+                      fontSize: "1em",
+                      gridArea: "1/1",
+                      zIndex: 1,
+                    }}
+                  >
+                    {data.plainLyrics || "No lyrics found."}
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="w-[33%] h-full relative flex flex-col gap-4 my-5">
-              {comments &&
-                comments.map((comment) => (
-                  <CommentView
-                    key={comment._id}
-                    comment={comment}
-                    setComment={(c) =>
-                      void updateComment({
-                        ...c,
-                        commentId: comment._id,
-                      })
-                    }
-                    deleteComment={() => {
-                      if (!comment.linked) {
-                        void deleteComment({ commentId: comment._id })
-                      } else {
-                        void unlink({
+            {/* comments */}
+            <div className="w-[33%] relative">
+              <div className="absolute inset-0 overflow-y-auto flex flex-col gap-4 p-4">
+                {comments &&
+                  comments.map((comment) => (
+                    <CommentView
+                      key={comment._id}
+                      comment={comment}
+                      setComment={(c) =>
+                        void updateComment({
+                          ...c,
                           commentId: comment._id,
-                          songId: data.id,
                         })
                       }
-                    }}
-                    songId={data.id}
-                  />
-                ))}
+                      deleteComment={() => {
+                        if (!comment.linked) {
+                          void deleteComment({ commentId: comment._id });
+                        } else {
+                          void unlink({
+                            commentId: comment._id,
+                            songId: data.id,
+                          });
+                        }
+                      }}
+                    />
+                  ))}
+              </div>
             </div>
           </div>
         </div>
@@ -328,10 +255,7 @@ function SongPageInternal({ id }: { id: number }) {
 }
 
 export default function SongPage() {
-  const [id] = useQueryState<number | null>("id", {
-    defaultValue: null,
-    parse: (v) => parseInt(v),
-  });
+  const [id] = useCurrentSong();
   if (!id) {
     return <Redirect to="/404" />;
   }

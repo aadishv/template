@@ -11,13 +11,16 @@ import { useTrackSearch } from "@/hooks";
 import { useQueryState } from "nuqs";
 import SongTable from "@/components/SongTable";
 export default function SearchPage() {
-  const [query, setQuery] = useQueryState<string>("query", { defaultValue: "", parse: v => v });
+  const [query, setQuery] = useQueryState<string>("query", {
+    defaultValue: "",
+    parse: (v) => v,
+  });
   const [scope, setScope] = useState<"all" | "song" | "artist" | "album">(
     "all",
   );
   const { data, isLoading } = useTrackSearch({
     q: query,
-    scope
+    scope,
   });
 
   return (

@@ -19,12 +19,16 @@ export default defineSchema({
     color: v.string(),
     title: v.string(),
     content: v.string(),
-  }).index("song_and_user", ["song", "user"]),
+  })
+    .index("song_and_user", ["song", "user"])
+    .index("user", ["user"]),
   linkedComments: defineTable({
     comment: v.id("comments"),
     start: v.number(),
     end: v.number(),
     song: v.number(),
     user: v.id("users"),
-  }).index("song_and_user", ["song", "user"])
+  })
+    .index("song_and_user", ["song", "user"])
+    .index("user", ["user"]),
 });

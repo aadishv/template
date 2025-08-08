@@ -18,6 +18,23 @@ export const saveSong = mutation({
       songId: id,
     });
     if (exists != null) {
+      const comments = await ctx.runQuery(api.comments.getUserCommentsForSong, {
+        songId: id,
+      });
+      await Promise.all(
+        comments.map((comment) => {
+          if (comment.linked == null) {
+            return ctx.runMutation(api.comments.deleteComment, {
+              commentId: comment._id,
+            });
+          } else {
+            return ctx.runMutation(api.comments.unlinkCommentFromSong, {
+              songId: id,
+              commentId: comment._id,
+            });
+          }
+        }),
+      );
       await ctx.db.delete(exists);
     } else {
       await ctx.db.insert("saved", { user: userId, song: id });
@@ -26,17 +43,37 @@ export const saveSong = mutation({
 });
 
 export const getLibrary = query({
-  args: {},
+  args: {
+    filterForComments: v.optional(v.boolean()),
+  },
   returns: v.array(v.number()),
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
-    const songs = await ctx.db
+    const saved = await ctx.db
       .query("saved")
       .withIndex("user", (q) => q.eq("user", userId))
       .collect();
-    const r = songs.map((song) => song.song);
-    return r;
+
+    if (args.filterForComments) {
+      const comments = await ctx.db
+        .query("comments")
+        .withIndex("user", (q) => q.eq("user", userId))
+        .collect();
+
+      const linked = await ctx.db
+        .query("linkedComments")
+        .withIndex("user", (q) => q.eq("user", userId))
+        .collect();
+
+      const commented = new Set<number>();
+      for (const c of comments) commented.add(c.song);
+      for (const l of linked) commented.add(l.song);
+
+      return saved.map((s) => s.song).filter((songId) => commented.has(songId));
+    }
+
+    return saved.map((s) => s.song);
   },
 });
 

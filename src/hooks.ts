@@ -1,8 +1,11 @@
 import { useQuery as useTSQuery } from "@tanstack/react-query";
 import api from "@/cvx";
 import { useQuery } from "convex/react";
-import { useEffect, useState } from "react";
-import { Id } from "convex/_generated/dataModel";
+import { useEffect } from "react";
+import { Infer } from "convex/values";
+import { commentValidator } from "convex/comments";
+
+export type Comment = Infer<typeof commentValidator>;
 
 export type Song = {
   id: number;
@@ -18,17 +21,6 @@ export type Song = {
   isSaved?: boolean;
 };
 
-export type Comment = {
-  user: string;
-  content: string;
-  start: number;
-  end: number;
-  color: string;
-  title: string;
-  _id: Id<"comments">;
-  linked: number | null;
-};
-
 export const useTrackSearch = (query: {
   q: string;
   scope: "all" | "song" | "artist" | "album";
@@ -39,16 +31,17 @@ export const useTrackSearch = (query: {
   const { q, scope } = query;
 
   const searchParams = {
-    q: scope === "all" ? q : null,
-    track_name: scope === "song" ? q : null,
-    artist_name: scope === "artist" ? q : null,
-    album_name: scope === "album" ? q : null,
+    q: scope === "all" ? q : "",
+    track_name: scope === "song" ? q : "",
+    artist_name: scope === "artist" ? q : "",
+    album_name: scope === "album" ? q : "",
   };
   const library = useQuery(api.library.getLibrary, {});
   const params = new URLSearchParams(searchParams as Record<string, string>);
   const { isLoading, data } = useTSQuery({
     queryKey: ["trackSearch", query],
     queryFn: async () => {
+      console.log(params.toString());
       const response = await fetch(
         `https://lrclib.net/api/search?${params.toString()}`,
       );
@@ -78,14 +71,18 @@ export const useTrackSearch = (query: {
   };
 };
 
-export const useLibrary = (): {
+export const useLibrary = (opts?: {
+  withComments?: boolean;
+}): {
   isLoading: boolean;
   data: Song[];
 } => {
+  const library = useQuery(api.library.getLibrary, {
+    filterForComments: opts?.withComments,
+  });
 
-  const library = useQuery(api.library.getLibrary, {});
-
-  const getPromiseForId = async (id: number) => await fetch(`https://lrclib.net/api/get/${id}`)
+  const getPromiseForId = async (id: number) =>
+    await fetch(`https://lrclib.net/api/get/${id}`)
       .then((res) => res.json())
       .then(
         (j) =>
@@ -96,7 +93,7 @@ export const useLibrary = (): {
       );
 
   const { isLoading, data } = useTSQuery({
-    queryKey: ["userLibrary", library],
+    queryKey: ["userLibrary", library, opts?.withComments],
     queryFn: async () => {
       const data = await Promise.all(library!.map(getPromiseForId));
       return data as Song[];
@@ -115,7 +112,9 @@ export const useLibrary = (): {
   };
 };
 
-export const useSong = (id: number): { isLoading: boolean; data?: Song } => {
+export const useSong = (
+  id: number | null,
+): { isLoading: boolean; data?: Song } => {
   const library = useQuery(api.library.getLibrary, {});
   const { isLoading, data } = useTSQuery({
     queryKey: ["song", id],
@@ -135,7 +134,7 @@ export const useSong = (id: number): { isLoading: boolean; data?: Song } => {
     isLoading: isLoading || library === undefined,
     data: data && {
       ...data,
-      isSaved: library?.includes(id) || false,
+      isSaved: id ? library?.includes(id) || false : false,
     },
   };
 };
@@ -153,14 +152,19 @@ export const useCommentsForSong = (
   };
 };
 
-export const useElementSelection = ({ id }: { id: string }) => {
-  const [selection, setSelection] = useState<Range | null>(null);
+export const useElementSelection = ({
+  id,
+  setter,
+}: {
+  id: string;
+  setter: (v: Range | null) => void;
+}) => {
   useEffect(() => {
     const abortController = new AbortController();
     const handler = () => {
       const docSelection = document.getSelection();
       if (docSelection?.rangeCount == 0 || !docSelection) {
-        setSelection(null);
+        setter(null);
         return;
       }
       const range = docSelection.getRangeAt(0);
@@ -169,12 +173,11 @@ export const useElementSelection = ({ id }: { id: string }) => {
       if (
         start == end &&
         start?.id == id &&
-        range.startOffset < range.endOffset &&
-        range != selection
+        range.startOffset < range.endOffset
       ) {
-        setSelection(range ?? null);
+        setter(range ?? null);
       } else {
-        setSelection(null);
+        setter(null);
       }
     };
 
@@ -185,6 +188,5 @@ export const useElementSelection = ({ id }: { id: string }) => {
     return () => {
       abortController.abort();
     };
-  }, [selection, id]);
-  return selection;
+  }, [id, setter]);
 };

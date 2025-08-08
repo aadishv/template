@@ -10,7 +10,7 @@ import { GoogleLogo, GitHubLogo } from "./logos";
 import { ReactNode } from "react";
 import { NuqsAdapter } from "nuqs/adapters/react"; // For plain React SPAs
 
-export default function AuthWrapper({ children }: { children: ReactNode }) {
+export default function ProviderWrapper({ children }: { children: ReactNode }) {
   const { signIn } = useAuthActions();
   return (
     <main>

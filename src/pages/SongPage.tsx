@@ -110,13 +110,13 @@ function SongPageInternal({ id }: { id: number }) {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col w-full overflow-hidden pt-16 px-16">
+    <div className="fixed inset-0 flex flex-col w-full overflow-hidden pt-16 lg:px-16 px-4">
       {isLoading ? (
         <Skeleton className="h-40 w-full top-15" />
       ) : data ? (
         <div className="flex flex-col">
           {/* card */}
-          <div className="flex-shrink-0 h-32 z-10 flex flex-row rounded-lg border shadow bg-white relative">
+          <div className="flex-shrink-0 z-10 flex flex-row rounded-lg border shadow bg-white relative">
             <SongDetails song={data} />
             {/* button group */}
             <div className="ml-auto h-full my-1 mr-1">

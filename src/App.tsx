@@ -12,11 +12,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import api from "./cvx";
 import { useQuery } from "convex/react";
 import { Library, MessageSquare, Search } from "lucide-react";
-import SearchPage from "./pages/Search";
-import LibraryPage from "./pages/Library";
-import SongPage from "./pages/SongPage";
 import { useState, useEffect } from "react";
-import CommentPage from "./pages/CommentPage";
 
 function NotFound() {
   const [count, setCount] = useState(3);
@@ -58,25 +54,31 @@ function App() {
   return (
     <ProviderWrapper>
       <div className="top-0 right-0 backdrop-blur-sm h-15 bg-white z-50 w-full fixed px-2 py-2 flex gap-5">
-        <span className="font-serif my-auto mx-5 text-2xl mr-auto">Lyrix</span>
+        <span className="font-serif my-auto mx-5 text-2xl mr-auto">My template app</span>
         <NavigationMenu className="mx-auto my-auto">
           <NavigationMenuList>
             <NavigationMenuLink asChild>
               <Link className="flex !flex-row" href="/">
                 <Search className="my-auto h-4 w-4" />
-                <span className="my-auto">Search</span>
+                <span className="my-auto">Default page</span>
               </Link>
             </NavigationMenuLink>
             <NavigationMenuLink asChild>
-              <Link href="/library" className="flex !flex-row">
+              <Link className="flex !flex-row" href="/page-1">
+                <Search className="my-auto h-4 w-4" />
+                <span className="my-auto">Page 1</span>
+              </Link>
+            </NavigationMenuLink>
+            <NavigationMenuLink asChild>
+              <Link href="/page-2" className="flex !flex-row">
                 <Library className="my-auto h-4 w-4" />
-                <span className="my-auto">Library</span>
+                <span className="my-auto">Page 2</span>
               </Link>
             </NavigationMenuLink>
             <NavigationMenuLink asChild>
-              <Link href="/comments" className="flex !flex-row">
+              <Link href="/page-3" className="flex !flex-row">
                 <MessageSquare className="my-auto h-4 w-4" />
-                <span className="my-auto">Comments</span>
+                <span className="my-auto">Page 3</span>
               </Link>
             </NavigationMenuLink>
           </NavigationMenuList>
@@ -99,16 +101,16 @@ function App() {
       <div className="mt-[10vh] mx-[10vw]">
         <Switch>
           <Route path="/">
-            <SearchPage />
+            <h1>Default page</h1>
           </Route>
-          <Route path="/library">
-            <LibraryPage />
+          <Route path="/page-1">
+            <h1>Page 1</h1>
           </Route>
-          <Route path="/song">
-            <SongPage />
+          <Route path="/page-2">
+            <h1>Page 2</h1>
           </Route>
-          <Route path="/comments">
-            <CommentPage />
+          <Route path="/page-3">
+            <h1>Page 3</h1>
           </Route>
           <Route>
             <NotFound />

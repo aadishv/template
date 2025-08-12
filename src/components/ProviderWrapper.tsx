@@ -10,6 +10,8 @@ import { GoogleLogo, GitHubLogo } from "./logos";
 import { ReactNode } from "react";
 import { NuqsAdapter } from "nuqs/adapters/react"; // For plain React SPAs
 
+import { Toaster } from "sonner";
+
 export default function ProviderWrapper({ children }: { children: ReactNode }) {
   const { signIn } = useAuthActions();
   return (
@@ -17,6 +19,7 @@ export default function ProviderWrapper({ children }: { children: ReactNode }) {
       <Authenticated>
         <NuqsAdapter>
           <QueryClientProvider client={queryClient}>
+            <Toaster />
             {children}
           </QueryClientProvider>
         </NuqsAdapter>
